@@ -20,8 +20,6 @@ export interface Action<T> {
      */
     getTotal(): number | null
 
-    getLabel(): string
-
     getPromise(): Promise<T>
 
     /**
@@ -36,5 +34,3 @@ export interface Action<T> {
      */
     getPresentation(): ActionPresentation | null
 }
-
-

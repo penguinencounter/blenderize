@@ -12,6 +12,9 @@
 - from files on disk
 - from the Internet
 - from ???
+## Plan
+- Decide what _before_, _merge_, and _after_ steps to use
+- Interpret contents and decide on MIME type.
 ## Before
 - Unpack containers (.zip etc)
 ## Merge
