@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <script src="./demo.js" type="module" defer></script>
+    <style>
+        body {
+            background: #222;
+            color: #fff;
+            font-family: sans-serif;
+        }
+        .card {
+            padding: 1.5rem;
+            margin: 1rem;
+            border-radius: .5rem;
+            background: #333;
+            display: flex;
+            flex-flow: column nowrap;
+            gap: 0.5rem;
+
+            & > .-label {
+                font-size: 1.2rem;
+                font-weight: bold;
+            }
+            & > .-progress {
+                width: 100%;
+                appearance: none;
+                border: 0;
+                height: 0.5rem;
+                border-radius: 0.25rem;
+                background: #444;
+
+                &::-moz-progress-bar, &::-webkit-progress-bar {
+                    background: #b8f;
+                }
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <div class="-label">label</div>
+        <div class="-progress-text">progress-text</div>
+        <progress class="-progress"></progress>
+    </div>
+</body>
+</html>

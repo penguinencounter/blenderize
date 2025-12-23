@@ -4,12 +4,15 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "tsc && tsc-alias && copyfiles -Vu 1 \"./src/**/*.html\" \"./src/**/*.css\" dist/"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "dependencies": {
+  "devDependencies": {
+    "copyfiles": "^2.4.1",
+    "tsc-alias": "^1.8.16",
     "typescript": "^5.9.3"
   }
 }

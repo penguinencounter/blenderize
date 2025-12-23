@@ -8,5 +8,9 @@
     "outDir": "dist",
     "sourceMap": true
   },
+  "tsc-alias": {
+    "verbose": true,
+    "resolveFullPaths": true,
+  },
   "include": ["src"]
 }
