@@ -2,7 +2,7 @@
 
 import {ProgressCallback, ActionPresentation} from "../api/action"
 import {BlenderFile} from "../api/content"
-import {Input, Merge} from "../api/flow"
+import {Input} from "../api/flow"
 import {byteSI} from "../api/helpers"
 import {MergeInfo} from "../api/tagger"
 

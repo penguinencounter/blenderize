@@ -1,23 +1,17 @@
 import {Action, ActionPresentation, ProgressCallback} from "./action"
 import {BlenderFile} from "./content"
 import {fulfilled} from "./helpers"
+import {Tagged} from "./tagger"
 
-export interface Plan<Container1, Container2> {
-    // these are all PRODUCERS
-    beforeTransform(): () => BeforeTransformer<Container1>
-
-    merger(): () => Merge<Container1, Container2>
-
-    afterTransform(): () => AfterTransformer<Container2>
-}
-
-export interface BeforeTransformPlan<C1> {
+export interface BeforeTransformPlan<C1 extends Tagged> {
     matches(file: BlenderFile): boolean
+
     process(file: BlenderFile): BeforeTransformer<C1>
 }
 
-export interface MergePlan<C1, C2> {
+export interface MergePlan<C1 extends Tagged, C2 extends Tagged> {
     matches(base: BlenderFile, sides: BlenderFile[], sideContainers: any[]): boolean
+
     process(base: BlenderFile, sides: BlenderFile[], sideContainers: C1[]): Merge<C1, C2>
 }
 
@@ -33,8 +27,8 @@ export abstract class InstantInput implements Input {
     protected wrap: Promise<BlenderFile> | undefined
 
     start(): Promise<BlenderFile> {
-        this.wrap = fulfilled(this.produce())
-        return this.wrap
+        if (this.wrap) throw new Error("Already started!")
+        return this.wrap = fulfilled(this.produce())
     }
 
     getProgress(): number {
@@ -57,12 +51,12 @@ export abstract class InstantInput implements Input {
     }
 }
 
-export interface BeforeTransformer<Out> extends Action<Out> {
+export interface BeforeTransformer<Out extends Tagged> extends Action<Out> {
 }
 
-export interface Merge<In, Out> extends Action<Out> {
+export interface Merge<In extends Tagged, Out extends Tagged> extends Action<Out> {
 
 }
 
-export interface AfterTransformer<In> extends Action<Uint8Array> {
+export interface AfterTransformer<In extends Tagged> extends Action<BlenderFile> {
 }
