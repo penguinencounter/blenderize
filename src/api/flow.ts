@@ -26,8 +26,9 @@ export abstract class InstantInput implements Input {
 
     protected wrap: Promise<BlenderFile> | undefined
 
-    start(): void {
+    start(): Promise<BlenderFile> {
         this.wrap = fulfilled(this.produce())
+        return this.wrap
     }
 
     getProgress(): number {

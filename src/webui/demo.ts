@@ -1,5 +1,6 @@
 import {FetchInput} from "../builtin_inputs/BrowserInputs"
 import {ActionPresentation} from "../api/action"
+import {ProgressBar} from "./ProgressBar"
 
 interface Card {
     label: HTMLElement,
@@ -28,25 +29,27 @@ function updatePresentation(present: ActionPresentation, card: Card) {
 
 window.addEventListener("load", () => {
     const card = produceCard(document.querySelector(".card")!)
+    const progressBar = new ProgressBar(document.querySelector(".progress")!)
 
     window.test = function () {
-        let task = new FetchInput("https://penguinencounter.github.io/mvn/snapshots/org/figuramc/figura-fabric/0.1.5%2B1.21.8-SNAPSHOT/figura-fabric-0.1.5%2B1.21.8-20251030.060822-1.jar")
+        progressBar.update(0.0, null)
+        let task = new FetchInput("https://cdn.modrinth.com/data/s9gIPDom/versions/caTeyUwg/figura-0.1.5b%2B1.21.4-neoforge-mc.jar")
         task.onProgress((progress, total) => {
-            if (total === null) {
-                card.progress.removeAttribute("value")
-            } else {
-                card.progress.max = total
-                card.progress.value = progress
-            }
+            progressBar.update(progress, total)
             const present = task.getPresentation()
             updatePresentation(present!, card)
         })
-        task.start()
-        task.getPromise().then(file => {
+        task.start().then(file => {
             updatePresentation(task.getPresentation()!, card)
-            card.progress.max = 1
-            card.progress.value = 1
+            progressBar.finish()
             console.log(file)
+        }).catch(reason => {
+            const present = task.getPresentation()!
+            updatePresentation({
+                label: present.label,
+                progressText: `error: ${reason}`
+            }, card)
+            progressBar.error()
         })
     }
 })

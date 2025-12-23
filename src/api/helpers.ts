@@ -22,7 +22,7 @@ export function byteSI(bytes: number) {
             bytes /= 1000
         else break
     }
-    if (i == 0) {
+    if (i === 0) {
         return `${bytes} ${unit}`
     }
     return `${bytes.toFixed(2)} ${unit}`

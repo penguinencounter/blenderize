@@ -11,7 +11,7 @@ export interface ActionPresentation {
 }
 
 export interface Action<T> {
-    start(): void
+    start(): Promise<T>
 
     getProgress(): number
 

@@ -31,7 +31,7 @@ export class FetchInput implements Input {
         if (!resp.body) throw new Error(`Bodyless response`)
 
         const cl = resp.headers.get("Content-Length")
-        this.total = cl == null ? cl : +cl
+        this.total = cl === null ? cl : +cl
         this.bump()
 
         // Try to progress the response
@@ -66,9 +66,10 @@ export class FetchInput implements Input {
         }
     }
 
-    start(): void {
+    start(): Promise<BlenderFile> {
         if (this.promise) throw new Error("Already started!")
         this.promise = this.inner()
+        return this.promise
     }
 
     getProgress(): number {
@@ -91,10 +92,10 @@ export class FetchInput implements Input {
     getPresentation(): ActionPresentation | null {
         const label = `download ${this.url}`
         let progressText: string
-        if (this.total == null) {
+        if (this.total === null) {
             progressText = `${byteSI(this.progress)} / ???`
         } else {
-            progressText = `${byteSI(this.progress)} / ${byteSI(this.total)} bytes`
+            progressText = `${byteSI(this.progress)} / ${byteSI(this.total)}`
         }
         return {
             label: label,

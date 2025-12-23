@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <script src="./demo.js" type="module" defer></script>
+    <style>
+        body {
+            background: #222;
+            color: #fff;
+            font-family: sans-serif;
+        }
+        .card {
+            padding: 1.5rem;
+            margin: 1rem;
+            border-radius: .5rem;
+            background: #333;
+            display: flex;
+            flex-flow: column nowrap;
+            gap: 0.5rem;
+
+            & > .-label {
+                font-size: 1.2rem;
+                font-weight: bold;
+            }
+        }
+
+        @property --value {
+            syntax: "<number>";
+            initial-value: 0;
+            inherits: true;
+        }
+        @property --max {
+            syntax: "<number>";
+            initial-value: 1;
+            inherits: true;
+        }
+
+        .progress {
+            height: 1rem;
+            border-radius: 0.5rem;
+            background: #444;
+            position: relative;
+            overflow: clip;
+            transition: --value ease-out 0.25s, --max ease-out 0.25s;
+
+            & > .-progress-slider {
+                position: absolute;
+                top: 0;
+                left: 0;
+                bottom: 0;
+                right: calc(100% - (var(--value) / var(--max)) * 100%);
+                background: #b8f;
+            }
+        }
+        .progress.-indeterminate > .-progress-slider {
+            background: repeating-linear-gradient(-45deg, #86a 0, #86a 0.5rem, #437 0.5rem, #437 1rem);
+            inset: 0;
+        }
+        .progress.-error > .-progress-slider {
+            background: repeating-linear-gradient(-45deg, #d44 0, #d44 0.5rem, #b22 0.5rem, #b22 1rem);
+            inset: 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <div class="-label">label</div>
+        <div class="-progress-text">progress-text</div>
+        <div class="progress" role="progressbar" aria-valuemin="0" aria-valuemax="0">
+            <div class="-progress-slider"></div>
+        </div>
+    </div>
+</body>
+</html>
