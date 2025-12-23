@@ -1,4 +1,4 @@
-import {FetchInput} from "../builtin_inputs/BrowserInputs"
+import {FetchInput} from "../inputs/BrowserInputs"
 import {ActionPresentation} from "../api/action"
 import {ProgressBar} from "./ProgressBar"
 
@@ -33,7 +33,13 @@ window.addEventListener("load", () => {
 
     window.test = function () {
         progressBar.update(0.0, null)
-        let task = new FetchInput("https://cdn.modrinth.com/data/s9gIPDom/versions/caTeyUwg/figura-0.1.5b%2B1.21.4-neoforge-mc.jar")
+        let task = new FetchInput(
+            "https://cdn.modrinth.com/data/s9gIPDom/versions/caTeyUwg/figura-0.1.5b%2B1.21.4-neoforge-mc.jar",
+            {
+                key: "root",
+                side: "base"
+            }
+        )
         task.onProgress((progress, total) => {
             progressBar.update(progress, total)
             const present = task.getPresentation()

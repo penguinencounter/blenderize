@@ -11,8 +11,14 @@ export interface Plan<Container1, Container2> {
     afterTransform(): () => AfterTransformer<Container2>
 }
 
-export interface Planner<C1, C2> {
-    getPlan(file: BlenderFile): Plan<C1, C2> | null
+export interface BeforeTransformPlan<C1> {
+    matches(file: BlenderFile): boolean
+    process(file: BlenderFile): BeforeTransformer<C1>
+}
+
+export interface MergePlan<C1, C2> {
+    matches(base: BlenderFile, sides: BlenderFile[], sideContainers: any[]): boolean
+    process(base: BlenderFile, sides: BlenderFile[], sideContainers: C1[]): Merge<C1, C2>
 }
 
 export interface Input extends Action<BlenderFile> {
@@ -39,8 +45,6 @@ export abstract class InstantInput implements Input {
         return null
     }
 
-    abstract getLabel(): string
-
     getPromise(): Promise<BlenderFile> {
         return this.wrap!
     }
@@ -54,13 +58,11 @@ export abstract class InstantInput implements Input {
 }
 
 export interface BeforeTransformer<Out> extends Action<Out> {
-    new(source: BlenderFile): ThisType<this>
 }
 
 export interface Merge<In, Out> extends Action<Out> {
-    new(base: In, diff1: In, diff2: In): ThisType<this>
+
 }
 
 export interface AfterTransformer<In> extends Action<Uint8Array> {
-    new(source: In): ThisType<this>
 }

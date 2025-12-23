@@ -1,23 +1,23 @@
 import {BlenderFile} from "../api/content"
 import {InstantInput} from "../api/flow"
+import {MergeInfo} from "../api/tagger"
 
 export class ByteArrayInput extends InstantInput {
     private readonly bytes: Uint8Array
     private readonly filename: string | undefined
+    private readonly merge: MergeInfo
 
-    constructor(bytes: Uint8Array, filename?: string) {
+    constructor(bytes: Uint8Array, merge: MergeInfo, filename?: string) {
         super()
         this.bytes = bytes
+        this.merge = merge
         this.filename = filename
-    }
-
-    getLabel(): string {
-        return this.filename ? `${this.filename} import (bytes)` : "(internal file import)"
     }
 
     produce(): BlenderFile {
         return {
             filename: this.filename,
+            merge: this.merge,
             content: this.bytes
         }
     }
@@ -26,10 +26,12 @@ export class ByteArrayInput extends InstantInput {
 export class StringInput extends InstantInput {
     private readonly source: string
     private readonly filename: string | undefined
+    private readonly merge: MergeInfo
 
-    constructor(source: string, filename?: string) {
+    constructor(source: string, merge: MergeInfo, filename?: string) {
         super()
         this.source = source
+        this.merge = merge
         this.filename = filename
     }
 
@@ -40,6 +42,7 @@ export class StringInput extends InstantInput {
     produce(): BlenderFile {
         return {
             filename: this.filename,
+            merge: this.merge,
             content: new TextEncoder().encode(this.source)
         }
     }

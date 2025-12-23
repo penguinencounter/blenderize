@@ -2,8 +2,9 @@
 
 import {ProgressCallback, ActionPresentation} from "../api/action"
 import {BlenderFile} from "../api/content"
-import {Input} from "../api/flow"
+import {Input, Merge} from "../api/flow"
 import {byteSI} from "../api/helpers"
+import {MergeInfo} from "../api/tagger"
 
 export class FetchInput implements Input {
     private promise?: Promise<BlenderFile>
@@ -12,10 +13,12 @@ export class FetchInput implements Input {
     private total: number | null = null
     private readonly url: string
     private readonly options?: RequestInit
+    private readonly merge: MergeInfo
 
-    constructor(url: string, options?: RequestInit) {
+    constructor(url: string, merge: MergeInfo, options?: RequestInit) {
         this.url = url
         this.options = options
+        this.merge = merge
     }
 
     private bump() {
@@ -62,6 +65,7 @@ export class FetchInput implements Input {
         const filename = url.pathname.split("/").at(-1)
         return {
             content: combined,
+            merge: this.merge,
             filename: filename
         }
     }
