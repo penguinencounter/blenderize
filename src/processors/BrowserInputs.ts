@@ -1,13 +1,19 @@
-import {InputProvider} from "../process";
-import {MaybeProgress, ProgressibleBuilder, ProgressibleImpl} from "../progressible";
+import {InputProvider, TaskVisuals} from "../struct/process"
+import {MaybeProgress, ProgressibleBuilder} from "../progressible"
+import {getUniqueID} from "../globals"
 
 export class BrowserFetchInput implements InputProvider {
     url: string
     options: RequestInit | undefined
+    id: number = getUniqueID()
 
     constructor(url: string, options: RequestInit | undefined) {
         this.url = url
         this.options = options
+    }
+
+    visual(): TaskVisuals | null {
+        throw new Error("Method not implemented.")
     }
 
     getContent(): MaybeProgress<Uint8Array, number> {
@@ -44,10 +50,15 @@ export class BrowserFetchInput implements InputProvider {
 }
 
 export class FileReaderInput implements InputProvider {
-    private around: File;
+    private around: File
+    id: number = getUniqueID()
 
     constructor(around: File) {
-        this.around = around;
+        this.around = around
+    }
+
+    visual(): TaskVisuals | null {
+        throw new Error("Method not implemented.")
     }
 
     getContent(): MaybeProgress<Uint8Array, number> {

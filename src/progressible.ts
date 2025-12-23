@@ -12,24 +12,26 @@ export function completed<T>(result: T): Progressible<T, never> {
     return new class implements Progressible<T, never> {
         complete: Promise<T> = new Promise<T>(
             (resolve, _) => resolve(result)
-        );
+        )
 
-        onProgress(callback: ProgressCallback<never>): Progressible<T, never> { return this }
+        onProgress(callback: ProgressCallback<never>): Progressible<T, never> {
+            return this
+        }
     }
 }
 
-export class ProgressibleImpl<FinishT, ProgressT> implements Progressible<FinishT, ProgressT> {
-    public complete: Promise<FinishT>;
-    private progressListeners: Array<ProgressCallback<ProgressT>> = []
+class ProgressibleImpl<FinishT, ProgressT> implements Progressible<FinishT, ProgressT> {
+    public complete: Promise<FinishT>
+    private progressListeners: ProgressCallback<ProgressT>[] = []
     private total: ProgressT | null
     private progress: ProgressT | null
 
     static numeric<FinishT>(around: Promise<FinishT>, total: number): ProgressibleImpl<FinishT, number> {
-        return new ProgressibleImpl<FinishT, number>(around, total);
+        return new ProgressibleImpl<FinishT, number>(around, total)
     }
 
     static numericIndeterminate<FinishT>(around: Promise<FinishT>): ProgressibleImpl<FinishT, number> {
-        return new ProgressibleImpl<FinishT, number>(around, null);
+        return new ProgressibleImpl<FinishT, number>(around, null)
     }
 
     constructor(around: Promise<FinishT>, initialTotal: ProgressT | null) {
@@ -57,6 +59,8 @@ export class ProgressibleImpl<FinishT, ProgressT> implements Progressible<Finish
         this.pushUpdate()
     }
 }
+
+export default ProgressibleImpl
 
 // bootstrapping for Progressible objects because they love to be self-referential
 export class ProgressibleBuilder<T, P> {
