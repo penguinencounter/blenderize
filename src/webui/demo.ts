@@ -1,7 +1,7 @@
 import {FetchInput} from "../inputs/BrowserInputs"
 import {ActionPresentation} from "../api/action"
 import {ProgressBar} from "./ProgressBar"
-import {MeyersDiff} from "../merge/merge_text"
+import {MyersDiff} from "../merge/merge_text"
 
 interface Card {
     label: HTMLElement,
@@ -61,7 +61,7 @@ window.addEventListener("load", () => {
         })
     }
     window.test2 = function(a, b) {
-        return MeyersDiff.diff(a, b).map(
+        return MyersDiff.diff(a, b).map(
             ({kind, left, right}) => `${kind.padEnd("insert".length)} ${left || right}`
         )
     }

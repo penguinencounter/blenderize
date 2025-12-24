@@ -39,7 +39,7 @@ type Move = {
  * https://www.raygard.net/2025/01/28/how-histogram-diff-works/ <-- this one's pretty good
  * https://blog.jcoglan.com/2017/02/12/the-myers-diff-algorithm-part-1/ <-- this one's pretty good too
  */
-export class MeyersDiff {
+export class MyersDiff {
     /*
     okay so we're going to need some sort of graph structure (?)
     and then we can have some BFS heuristic
