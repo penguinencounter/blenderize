@@ -1,21 +1,8 @@
 import {ProgressCallback, ActionPresentation} from "../api/action"
 import {Merge} from "../api/flow"
 import {TaggedRawBytes} from "../transformers/RawTransformers"
-import {Tagged} from "../api/tagger"
 
 type FileAtoms = string[]
-
-interface Range {
-    from: number
-    to: number
-}
-
-interface Region {
-    left: Range
-    right: Range
-}
-
-type AtomHistogram = Map<string, number>
 
 type Edit<T> = {
     kind: "insert" | "delete" | "equal",
