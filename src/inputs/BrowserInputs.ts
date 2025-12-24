@@ -94,7 +94,8 @@ export class FetchInput implements Input {
     }
 
     getPresentation(): ActionPresentation | null {
-        const label = `download ${this.url}`
+        const tail = new URL(this.url).pathname.split("/").at(-1) || this.url
+        const label = `download ${tail}`
         let progressText: string
         if (this.total === null) {
             progressText = `${byteSI(this.progress)} / ???`

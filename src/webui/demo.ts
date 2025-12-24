@@ -1,6 +1,7 @@
 import {FetchInput} from "../inputs/BrowserInputs"
 import {ActionPresentation} from "../api/action"
 import {ProgressBar} from "./ProgressBar"
+import {MeyersDiff} from "../merge/merge_text"
 
 interface Card {
     label: HTMLElement,
@@ -19,6 +20,7 @@ function produceCard(card: HTMLElement): Card {
 declare global {
     interface Window {
         test: () => void
+        test2: (a: ArrayLike<any>, b: ArrayLike<any>) => any
     }
 }
 
@@ -57,5 +59,10 @@ window.addEventListener("load", () => {
             }, card)
             progressBar.error()
         })
+    }
+    window.test2 = function(a, b) {
+        return MeyersDiff.diff(a, b).map(
+            ({kind, left, right}) => `${kind.padEnd("insert".length)} ${left || right}`
+        )
     }
 })
