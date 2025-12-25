@@ -7,7 +7,9 @@ type FileAtoms = string[]
 type Edit<T> = {
     kind: "insert" | "delete" | "equal",
     left: T | null,
-    right: T | null
+    leftI: number | null,
+    right: T | null,
+    rightI: number | null,
 }
 
 type Move = {
@@ -15,6 +17,61 @@ type Move = {
     fromY: number,
     toX: number,
     toY: number
+}
+
+interface DiffAlgorithm {
+    diff(left: FileAtoms, right: FileAtoms): TwoWayDiffResult<string>
+}
+
+export class TwoWayDiffResult<T> {
+    readonly edits: Edit<T>[] = []
+    readonly ltrMap: Map<number, number | null> = new Map<number, number>()
+    readonly rtlMap: Map<number, number | null> = new Map<number, number>()
+
+    public submitAdd(
+        right: T,
+        rightI: number,
+    ) {
+        this.edits.push({
+            kind: "insert",
+            left: null,
+            leftI: null,
+            right: right,
+            rightI: rightI
+        })
+        this.rtlMap.set(rightI, null)
+    }
+
+    public submitDel(
+        left: T,
+        leftI: number,
+    ) {
+        this.edits.push({
+            kind: "delete",
+            left: left,
+            leftI: leftI,
+            right: null,
+            rightI: null
+        })
+        this.ltrMap.set(leftI, null)
+    }
+
+    public submitEqual(
+        left: T,
+        leftI: number,
+        right: T,
+        rightI: number,
+    ) {
+        this.edits.push({
+            kind: "equal",
+            left: left,
+            leftI: leftI,
+            right: right,
+            rightI: rightI
+        })
+        this.ltrMap.set(leftI, rightI)
+        this.rtlMap.set(rightI, leftI)
+    }
 }
 
 /**
@@ -129,29 +186,46 @@ export class MyersDiff {
     }
 
     static diff<T>(left: ArrayLike<T>, right: ArrayLike<T>) {
-        const diff: Edit<T>[] = []
+        const result = new TwoWayDiffResult<T>()
         this.backtrack(left, right).forEach(({fromX, fromY, toX, toY}) => {
             const a = left[fromX]
             const b = right[fromY]
-            if (toX === fromX) diff.push({
-                kind: "insert",
-                left: null,
-                right: b
-            })
-            else if (toY === fromY) diff.push({
-                kind: "delete",
-                left: a,
-                right: null
-            })
-            else diff.push({
-                    kind: "equal",
-                    left: a,
-                    right: b,
-                })
+            if (toX === fromX)
+                result.submitAdd(b, fromY)
+            else if (toY === fromY)
+                result.submitDel(a, fromX)
+            else
+                result.submitEqual(a, fromX, b, fromY)
         })
-        return diff
+        return result
     }
+
+    static readonly DIFF: DiffAlgorithm = this
 }
+
+type Range = [number, number]
+
+/*
+from the upenn paper:
+- STABLE if all three ranges are the same length and same content
+- UNSTABLE otherwise, with 4 variants:
+*note: == means content equal
+  - changed in side1, if base == side2 but side2 != side1
+  - changed in side2, if base == side1 but side1 != side2
+  - falsely conflicting if base != side1, but side1 == side2
+  - truly conflicting if all three sides are different
+ */
+interface Chunk {
+    base: Range
+    side1: Range
+    side2: Range
+}
+
+const Chunk = {
+    size(c: Chunk) {
+        return c.base[1] - c.base[0] + c.side1[1] - c.side1[0] + c.side2[1] - c.side2[0]
+    }
+} as const
 
 /**
  * Line merge algorithm that supports exactly 2 sides and a base.
@@ -161,9 +235,14 @@ export class MyersDiff {
  * https://en.wikipedia.org/wiki/Merge_(version_control)
  */
 export class TextThreeWayMerge implements Merge<TaggedRawBytes, TaggedRawBytes> {
+    private static readonly TWO_WAY_ALGORITHM = MyersDiff.DIFF
+
     private readonly baseText: string
-    private readonly side1text: string
-    private readonly side2text: string
+    private readonly side1Text: string
+    private readonly side2Text: string
+    private readonly baseAtoms: FileAtoms
+    private readonly side1Atoms: FileAtoms
+    private readonly side2Atoms: FileAtoms
 
     static atomize(text: string): FileAtoms {
         // on the subject of CRLFs: keep 'em :shrug:
@@ -181,8 +260,87 @@ export class TextThreeWayMerge implements Merge<TaggedRawBytes, TaggedRawBytes> 
     ) {
         const decoder = new TextDecoder("utf-8", {fatal: true})
         this.baseText = decoder.decode(base.content)
-        this.side1text = decoder.decode(side1.content)
-        this.side2text = decoder.decode(side2.content)
+        this.side1Text = decoder.decode(side1.content)
+        this.side2Text = decoder.decode(side2.content)
+        this.baseAtoms = TextThreeWayMerge.atomize(this.baseText)
+        this.side1Atoms = TextThreeWayMerge.atomize(this.side1Text)
+        this.side2Atoms = TextThreeWayMerge.atomize(this.side2Text)
+    }
+
+    private build2way(): { diff1: TwoWayDiffResult<string>, diff2: TwoWayDiffResult<string> } {
+        const diff1 = TextThreeWayMerge.TWO_WAY_ALGORITHM.diff(this.baseAtoms, this.side1Atoms)
+        const diff2 = TextThreeWayMerge.TWO_WAY_ALGORITHM.diff(this.baseAtoms, this.side2Atoms)
+        return {
+            diff1: diff1,
+            diff2: diff2
+        }
+    }
+
+    // see Figure 2 "The Diff3 Algorithm"
+    // it uses 1-indexed arrays though and pays the price for it by having all sorts of janky +/-
+    private parse(diff1: TwoWayDiffResult<string>, diff2: TwoWayDiffResult<string>) {
+        // 1.
+        let lBase = 0, lSide1 = 0, lSide2 = 0
+        const chunks: Chunk[] = []
+
+        const baseN = this.baseAtoms.length
+        const side1N = this.side1Atoms.length
+        const side2N = this.side2Atoms.length
+
+        step2: while (true) {
+            for (let i = 0; ; i++) {
+                // M_A[x, y] means "does line X in base correspond to line Y in side1"?
+                // i.e. ltrMapping.get(x) === y
+                const baseAt = lBase + i
+                if (baseAt >= baseN) break step2
+                const side1At = lSide1 + i
+                const side2At = lSide2 + i
+
+                if (diff1.ltrMap.get(baseAt) === side1At || diff2.ltrMap.get(baseAt) === side2At) continue
+
+                if (i === 0) {
+                    // unstable
+                    // find some O >= lBase that exists on both sides:
+                    for (let o = lBase; ; o++) {
+                        if (o >= baseN) break step2
+                        const a = diff1.ltrMap.get(o)
+                        if (!a) continue
+                        const b = diff2.ltrMap.get(o)
+                        if (!b) continue
+                        chunks.push({
+                            base: [baseAt, o - 1],
+                            side1: [side1At, a - 1],
+                            side2: [side2At, b - 1]
+                        })
+                        lBase = o
+                        lSide1 = a
+                        lSide2 = b
+                        continue step2
+                    }
+                } else {
+                    // stable
+                    chunks.push({
+                        base: [lBase, baseAt - 1],
+                        side1: [lSide1, side1At - 1],
+                        side2: [lSide2, side2At - 1],
+                    })
+                    lBase = baseAt
+                    lSide1 = side1At
+                    lSide2 = side2At
+                    continue step2
+                }
+            }
+        }
+
+        if (lBase < baseN - 1 || lSide1 < side1N - 1 || lSide2 < side2N - 1) {
+            chunks.push({
+                base: [lBase, baseN - 1],
+                side1: [lSide1, side1N - 1],
+                side2: [lSide1, side2N - 1],
+            })
+        }
+
+        return chunks
     }
 
     // TODO: Use a worker to off-thread this?
