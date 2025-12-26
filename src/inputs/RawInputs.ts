@@ -1,6 +1,6 @@
-import {BlenderFile} from "../api/content"
+
 import {InstantInput} from "../api/flow"
-import {MergeInfo} from "../api/tagger"
+import {BlenderFile, MergeInfo} from "../api/tagger"
 
 export class ByteArrayInput extends InstantInput {
     private readonly bytes: Uint8Array

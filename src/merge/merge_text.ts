@@ -1,6 +1,6 @@
 import {ProgressCallback, ActionPresentation} from "../api/action"
 import {Merge} from "../api/flow"
-import {TaggedRawBytes} from "../transformers/RawTransformers"
+import {RawFile} from "../api/tagger"
 
 type FileAtoms = string[]
 
@@ -19,9 +19,7 @@ type Move = {
     toY: number
 }
 
-interface DiffAlgorithm {
-    diff(left: FileAtoms, right: FileAtoms): TwoWayDiffResult<string>
-}
+type DiffAlgorithm = (left: FileAtoms, right: FileAtoms) => TwoWayDiffResult<string>
 
 export class TwoWayDiffResult<T> {
     readonly edits: Edit<T>[] = []
@@ -88,7 +86,7 @@ function fatal(message: string): never {
  * https://www.raygard.net/2025/01/28/how-histogram-diff-works/ <-- this one's pretty good
  * https://blog.jcoglan.com/2017/02/12/the-myers-diff-algorithm-part-1/ <-- this one's pretty good too
  */
-export class MyersDiff {
+export const MyersDiff = ((): DiffAlgorithm => {
     /*
     okay so we're going to need some sort of graph structure (?)
     and then we can have some BFS heuristic
@@ -102,7 +100,7 @@ export class MyersDiff {
     // CREDIT: adapted from https://blog.jcoglan.com/2017/02/15/the-myers-diff-algorithm-part-2/
     // THANK YOU!!
     // FIXME: d is too big for some reason
-    static shortest_edit(left: ArrayLike<any>, right: ArrayLike<any>): Map<number, number>[] {
+    function shortest_edit(left: ArrayLike<any>, right: ArrayLike<any>): Map<number, number>[] {
         const n = left.length
         const m = right.length
         const max = n + m
@@ -145,11 +143,11 @@ export class MyersDiff {
         throw new Error("failed!")
     }
 
-    static backtrack(left: ArrayLike<any>, right: ArrayLike<any>) {
+    function backtrack(left: ArrayLike<any>, right: ArrayLike<any>) {
         let x = left.length
         let y = right.length
         const moves: Move[] = []
-        this.shortest_edit(left, right)
+        shortest_edit(left, right)
             .map((v, d) => ({v: v, d: d}))
             .reverse()
             .forEach(({v, d}) => {
@@ -194,9 +192,9 @@ export class MyersDiff {
         return moves
     }
 
-    static diff<T>(left: ArrayLike<T>, right: ArrayLike<T>) {
+    function diff<T>(left: ArrayLike<T>, right: ArrayLike<T>) {
         const result = new TwoWayDiffResult<T>()
-        this.backtrack(left, right).forEach(({fromX, fromY, toX, toY}) => {
+        backtrack(left, right).forEach(({fromX, fromY, toX, toY}) => {
             const a = left[fromX]
             const b = right[fromY]
             if (toX === fromX)
@@ -209,9 +207,12 @@ export class MyersDiff {
         return result
     }
 
-    static readonly DIFF: DiffAlgorithm = this
-}
+    return diff
+})()
 
+/**
+ * `[from, to)`
+ */
 type Range = [number, number]
 
 /*
@@ -243,8 +244,8 @@ const Chunk = {
  * https://en.wikipedia.org/wiki/Diff3
  * https://en.wikipedia.org/wiki/Merge_(version_control)
  */
-export class TextThreeWayMerge implements Merge<TaggedRawBytes, TaggedRawBytes> {
-    private static readonly TWO_WAY_ALGORITHM = MyersDiff.DIFF
+export class TextThreeWayMerge implements Merge<RawFile, RawFile> {
+    private static readonly TWO_WAY_ALGORITHM = MyersDiff
 
     private readonly baseText: string
     private readonly side1Text: string
@@ -258,14 +259,10 @@ export class TextThreeWayMerge implements Merge<TaggedRawBytes, TaggedRawBytes> 
         return text.split("\n")
     }
 
-    static reconstruct(atoms: FileAtoms): string {
-        return atoms.join("\n")
-    }
-
     constructor(
-        base: TaggedRawBytes,
-        side1: TaggedRawBytes,
-        side2: TaggedRawBytes
+        base: RawFile,
+        side1: RawFile,
+        side2: RawFile
     ) {
         const decoder = new TextDecoder("utf-8", {fatal: true})
         this.baseText = decoder.decode(base.content)
@@ -277,8 +274,8 @@ export class TextThreeWayMerge implements Merge<TaggedRawBytes, TaggedRawBytes> 
     }
 
     private build2way(): { diff1: TwoWayDiffResult<string>, diff2: TwoWayDiffResult<string> } {
-        const diff1 = TextThreeWayMerge.TWO_WAY_ALGORITHM.diff(this.baseAtoms, this.side1Atoms)
-        const diff2 = TextThreeWayMerge.TWO_WAY_ALGORITHM.diff(this.baseAtoms, this.side2Atoms)
+        const diff1 = TextThreeWayMerge.TWO_WAY_ALGORITHM(this.baseAtoms, this.side1Atoms)
+        const diff2 = TextThreeWayMerge.TWO_WAY_ALGORITHM(this.baseAtoms, this.side2Atoms)
         return {
             diff1: diff1,
             diff2: diff2
@@ -317,9 +314,9 @@ export class TextThreeWayMerge implements Merge<TaggedRawBytes, TaggedRawBytes> 
                         const b = diff2.ltrMap.get(o)
                         if (!b) continue
                         chunks.push({
-                            base: [baseAt, o - 1],
-                            side1: [side1At, a - 1],
-                            side2: [side2At, b - 1]
+                            base: [baseAt, o],
+                            side1: [side1At, a],
+                            side2: [side2At, b]
                         })
                         lBase = o
                         lSide1 = a
@@ -329,9 +326,9 @@ export class TextThreeWayMerge implements Merge<TaggedRawBytes, TaggedRawBytes> 
                 } else {
                     // stable
                     chunks.push({
-                        base: [lBase, baseAt - 1],
-                        side1: [lSide1, side1At - 1],
-                        side2: [lSide2, side2At - 1],
+                        base: [lBase, baseAt],
+                        side1: [lSide1, side1At],
+                        side2: [lSide2, side2At],
                     })
                     lBase = baseAt
                     lSide1 = side1At
@@ -343,9 +340,9 @@ export class TextThreeWayMerge implements Merge<TaggedRawBytes, TaggedRawBytes> 
 
         if (lBase < baseN || lSide1 < side1N || lSide2 < side2N) {
             chunks.push({
-                base: [lBase, baseN - 1],
-                side1: [lSide1, side1N - 1],
-                side2: [lSide1, side2N - 1],
+                base: [lBase, baseN],
+                side1: [lSide1, side1N],
+                side2: [lSide1, side2N],
             })
         }
 
@@ -358,7 +355,7 @@ export class TextThreeWayMerge implements Merge<TaggedRawBytes, TaggedRawBytes> 
     }
 
     // TODO: Use a worker to off-thread this?
-    start(): Promise<TaggedRawBytes> {
+    start(): Promise<RawFile> {
         throw new Error("Method not implemented.")
     }
 
@@ -370,7 +367,7 @@ export class TextThreeWayMerge implements Merge<TaggedRawBytes, TaggedRawBytes> 
         throw new Error("Method not implemented.")
     }
 
-    getPromise(): Promise<TaggedRawBytes> {
+    getPromise(): Promise<RawFile> {
         throw new Error("Method not implemented.")
     }
 

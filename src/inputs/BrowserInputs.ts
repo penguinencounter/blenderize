@@ -1,10 +1,9 @@
 // browser-only: uses Fetch or Files
 
 import {ProgressCallback, ActionPresentation} from "../api/action"
-import {BlenderFile} from "../api/content"
 import {Input} from "../api/flow"
 import {byteSI} from "../api/helpers"
-import {MergeInfo} from "../api/tagger"
+import {BlenderFile, MergeInfo} from "../api/tagger"
 
 export class FetchInput implements Input {
     private promise?: Promise<BlenderFile>

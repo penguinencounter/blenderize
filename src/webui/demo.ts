@@ -1,8 +1,8 @@
 import {FetchInput} from "../inputs/BrowserInputs"
 import {ActionPresentation} from "../api/action"
 import {ProgressBar} from "./ProgressBar"
-import {MyersDiff, TextThreeWayMerge} from "../merge/merge_text"
-import {TaggedRawBytes} from "../transformers/RawTransformers"
+import {TextThreeWayMerge} from "../merge/merge_text"
+import {RawFile} from "../api/tagger"
 
 interface Card {
     label: HTMLElement,
@@ -61,9 +61,15 @@ window.addEventListener("load", () => {
             progressBar.error()
         })
     }
-    function tagIt(x: string) {
-        return <TaggedRawBytes>{
+    function tagIt(x: string): RawFile {
+        return {
             content: new TextEncoder().encode(x),
+            rawFile: true,
+            merge: {
+                key: "demo_not_a_real_merge",
+                side: 0
+            },
+            isText: true,
             tag: "raw_bytes"
         }
     }

@@ -1,27 +1,23 @@
 import {ProgressCallback, ActionPresentation} from "../api/action"
 import {AfterTransformer, BeforeTransformer} from "../api/flow"
-import {BlenderFile} from "../api/content"
-import {Tagged} from "../api/tagger"
+import {BlenderFile, RawFile, Tagged} from "../api/tagger"
 import {fulfilled} from "../api/helpers"
 
-export interface TaggedRawBytes extends Tagged {
-    readonly content: Uint8Array
-    readonly tag: "raw_bytes"
-}
-
-class NoBeforeTransformer implements BeforeTransformer<TaggedRawBytes> {
-    private readonly result: TaggedRawBytes
-    private promise?: Promise<TaggedRawBytes>
+export class AssumeTextTransformer implements BeforeTransformer<RawFile> {
+    private readonly result: RawFile
+    private promise?: Promise<RawFile>
 
     constructor(source: BlenderFile) {
         this.result = {
             content: source.content,
-            tag: "raw_bytes",
-            merge: source.merge
+            tag: "always_text",
+            isText: true, // totally real
+            merge: source.merge,
+            rawFile: true
         }
     }
 
-    start(): Promise<TaggedRawBytes> {
+    start(): Promise<RawFile> {
         if (this.promise) throw new Error("already started!")
         return this.promise = fulfilled(this.result)
     }
@@ -46,11 +42,11 @@ class NoBeforeTransformer implements BeforeTransformer<TaggedRawBytes> {
     }
 }
 
-class NoAfterTransformer implements AfterTransformer<TaggedRawBytes> {
+export class NoAfterTransformer implements AfterTransformer<RawFile> {
     private readonly result: BlenderFile
     private promise?: Promise<BlenderFile>
 
-    constructor(source: TaggedRawBytes) {
+    constructor(source: RawFile) {
         this.result = {
             merge: source.merge,
             filename: undefined,

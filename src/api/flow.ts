@@ -1,18 +1,35 @@
 import {Action, ActionPresentation, ProgressCallback} from "./action"
-import {BlenderFile} from "./content"
 import {fulfilled} from "./helpers"
-import {Tagged} from "./tagger"
+import {BlenderFile, Tagged} from "./tagger"
 
-export interface BeforeTransformPlan<C1 extends Tagged> {
+export interface Planner {
+    /**
+     * who are you?
+     */
+    id: string
+
+    /**
+     * higher priority first
+     */
+    priority: number
+}
+
+export interface BeforeTransformPlan<C1 extends Tagged> extends Planner {
     matches(file: BlenderFile): boolean
 
     process(file: BlenderFile): BeforeTransformer<C1>
 }
 
-export interface MergePlan<C1 extends Tagged, C2 extends Tagged> {
-    matches(base: BlenderFile, sides: BlenderFile[], sideContainers: any[]): boolean
+export interface MergePlan<C1 extends Tagged, C2 extends Tagged> extends Planner {
+    matches(base: BlenderFile, sides: BlenderFile[], baseContainer: Tagged, sideContainers: Tagged[]): boolean
 
-    process(base: BlenderFile, sides: BlenderFile[], sideContainers: C1[]): Merge<C1, C2>
+    process(base: BlenderFile, sides: BlenderFile[], baseContainer: C1, sideContainers: C1[]): Merge<C1, C2>
+}
+
+export interface AfterTransformPlan<C2 extends Tagged> extends Planner {
+    matches(result: Tagged): boolean
+
+    process(result: C2): AfterTransformer<C2>
 }
 
 export interface Input extends Action<BlenderFile> {
