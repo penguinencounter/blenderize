@@ -32,7 +32,7 @@ export class TwoWayDiffResult<T> {
         right: T,
         rightI: number,
     ) {
-        this.edits.push({
+        this.edits.unshift({
             kind: "insert",
             left: null,
             leftI: null,
@@ -46,7 +46,7 @@ export class TwoWayDiffResult<T> {
         left: T,
         leftI: number,
     ) {
-        this.edits.push({
+        this.edits.unshift({
             kind: "delete",
             left: left,
             leftI: leftI,
@@ -62,7 +62,7 @@ export class TwoWayDiffResult<T> {
         right: T,
         rightI: number,
     ) {
-        this.edits.push({
+        this.edits.unshift({
             kind: "equal",
             left: left,
             leftI: leftI,
@@ -72,6 +72,11 @@ export class TwoWayDiffResult<T> {
         this.ltrMap.set(leftI, rightI)
         this.rtlMap.set(rightI, leftI)
     }
+}
+
+function fatal(message: string): never {
+    debugger
+    throw new TypeError(message)
 }
 
 /**
@@ -97,28 +102,28 @@ export class MyersDiff {
     // CREDIT: adapted from https://blog.jcoglan.com/2017/02/15/the-myers-diff-algorithm-part-2/
     // THANK YOU!!
     // FIXME: d is too big for some reason
-    static shortest_edit(left: ArrayLike<any>, right: ArrayLike<any>): number[][] {
+    static shortest_edit(left: ArrayLike<any>, right: ArrayLike<any>): Map<number, number>[] {
         const n = left.length
         const m = right.length
         const max = n + m
 
         // hold largest X for each K (value of x-y; this changes when following a diagonal)
-        const v: number[] = new Array(2 * max + 1)
-        v[1] = 0
-        const trace: number[][] = []
+        const v: Map<number, number> = new Map()
+        v.set(1, 0)
+        const trace: Map<number, number>[] = []
 
         for (let d = 0; d <= max; d++) {
-            trace.push([...v])
+            trace.push(new Map(v))
 
             for (let k = -d; k <= d; k += 2) {
                 let x: number
                 // choose what to do from the previous round
-                if (k === -d || (k !== d && v[k - 1] < v[k + 1])) {
+                if (k === -d || (k !== d && v.get(k - 1)! < v.get(k + 1)!)) {
                     // down (i.e. insert)
-                    x = v[k + 1]
+                    x = v.get(k + 1) ?? fatal(`v at ${k + 1}`)
                 } else {
                     // right (i.e. delete)
-                    x = v[k - 1] + 1
+                    x = (v.get(k - 1) ?? fatal(`v at ${k - 1}`)) + 1
                 }
                 // derive (because k = x - y, y = x - k)
                 let y = x - k
@@ -131,7 +136,7 @@ export class MyersDiff {
                 }
 
                 // if we've taken a diagonal, then the best X has changed; store
-                v[k] = x
+                v.set(k, x)
 
                 // profit?
                 if (x >= n && y >= m) return trace
@@ -150,12 +155,16 @@ export class MyersDiff {
             .forEach(({v, d}) => {
                 const k = x - y
                 let prevK: number
-                if (k === -d || (k !== d && v[k - 1] < v[k + 1])) {
+                if (
+                    k === -d || (k !== d &&
+                        (v.get(k - 1) ?? fatal(`v at ${k - 1}`)) < (v.get(k + 1) ?? fatal(`v at ${k + 1}`))
+                    )
+                ) {
                     prevK = k + 1
                 } else {
                     prevK = k - 1
                 }
-                const prevX = v[prevK]
+                const prevX = v.get(prevK) ?? fatal(`v at ${prevK}`)
                 const prevY = prevX - prevK
 
                 // diagonals
@@ -296,7 +305,7 @@ export class TextThreeWayMerge implements Merge<TaggedRawBytes, TaggedRawBytes> 
                 const side1At = lSide1 + i
                 const side2At = lSide2 + i
 
-                if (diff1.ltrMap.get(baseAt) === side1At || diff2.ltrMap.get(baseAt) === side2At) continue
+                if (diff1.ltrMap.get(baseAt) === side1At && diff2.ltrMap.get(baseAt) === side2At) continue
 
                 if (i === 0) {
                     // unstable
@@ -332,7 +341,7 @@ export class TextThreeWayMerge implements Merge<TaggedRawBytes, TaggedRawBytes> 
             }
         }
 
-        if (lBase < baseN - 1 || lSide1 < side1N - 1 || lSide2 < side2N - 1) {
+        if (lBase < baseN || lSide1 < side1N || lSide2 < side2N) {
             chunks.push({
                 base: [lBase, baseN - 1],
                 side1: [lSide1, side1N - 1],
@@ -341,6 +350,11 @@ export class TextThreeWayMerge implements Merge<TaggedRawBytes, TaggedRawBytes> 
         }
 
         return chunks
+    }
+
+    demo() {
+        const {diff1, diff2} = this.build2way()
+        return this.parse(diff1, diff2)
     }
 
     // TODO: Use a worker to off-thread this?

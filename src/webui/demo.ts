@@ -1,7 +1,8 @@
 import {FetchInput} from "../inputs/BrowserInputs"
 import {ActionPresentation} from "../api/action"
 import {ProgressBar} from "./ProgressBar"
-import {MyersDiff} from "../merge/merge_text"
+import {MyersDiff, TextThreeWayMerge} from "../merge/merge_text"
+import {TaggedRawBytes} from "../transformers/RawTransformers"
 
 interface Card {
     label: HTMLElement,
@@ -20,7 +21,7 @@ function produceCard(card: HTMLElement): Card {
 declare global {
     interface Window {
         test: () => void
-        test2: (a: ArrayLike<any>, b: ArrayLike<any>) => any
+        test2: (a: string, b: string, c: string) => any
     }
 }
 
@@ -60,9 +61,15 @@ window.addEventListener("load", () => {
             progressBar.error()
         })
     }
-    window.test2 = function(a, b) {
-        return MyersDiff.diff(a, b).map(
-            ({kind, left, right}) => `${kind.padEnd("insert".length)} ${left || right}`
-        )
+    function tagIt(x: string) {
+        return <TaggedRawBytes>{
+            content: new TextEncoder().encode(x),
+            tag: "raw_bytes"
+        }
+    }
+
+    window.test2 = function(a, b, c) {
+        let action = new TextThreeWayMerge(tagIt(a), tagIt(b), tagIt(c))
+        return action.demo()
     }
 })
