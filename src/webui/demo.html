@@ -10,6 +10,7 @@
             color: #fff;
             font-family: sans-serif;
         }
+
         .card {
             padding: 1.5rem;
             margin: 1rem;
@@ -30,6 +31,7 @@
             initial-value: 0;
             inherits: true;
         }
+
         @property --max {
             syntax: "<number>";
             initial-value: 1;
@@ -53,10 +55,12 @@
                 background: #b8f;
             }
         }
+
         .progress.-indeterminate > .-progress-slider {
             background: repeating-linear-gradient(-45deg, #86a 0, #86a 0.5rem, #437 0.5rem, #437 1rem);
             inset: 0;
         }
+
         .progress.-error > .-progress-slider {
             background: repeating-linear-gradient(-45deg, #d44 0, #d44 0.5rem, #b22 0.5rem, #b22 1rem);
             inset: 0;
@@ -64,12 +68,12 @@
     </style>
 </head>
 <body>
-    <div class="card">
-        <div class="-label">label</div>
-        <div class="-progress-text">progress-text</div>
-        <div class="progress" role="progressbar" aria-valuemin="0" aria-valuemax="0">
-            <div class="-progress-slider"></div>
-        </div>
+<div class="card">
+    <div class="-label">label</div>
+    <div class="-progress-text">progress-text</div>
+    <div class="progress" role="progressbar" aria-valuemin="0" aria-valuemax="0">
+        <div class="-progress-slider"></div>
     </div>
+</div>
 </body>
 </html>

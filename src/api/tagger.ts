@@ -11,6 +11,13 @@ export type MergeInfo = {
     side: "base" | number
 }
 
+export interface TaggedType {
+    rawFile?: true
+    filesystem?: true
+
+    [anything: string]: boolean | undefined
+}
+
 export interface Tagged {
     /**
      * Differentiates types of container.
@@ -20,12 +27,13 @@ export interface Tagged {
      * Keeps containers for the same merge bundled together.
      */
     readonly merge: MergeInfo
+    readonly type: TaggedType
 }
 
 export interface RawFile extends Tagged {
-    rawFile: true
-    isText: boolean
-    content: Uint8Array
+    readonly type: { rawFile: true }
+    readonly isText: boolean
+    readonly content: Uint8Array
 }
 
 /**
@@ -33,10 +41,12 @@ export interface RawFile extends Tagged {
  * or some other kind of multi-file _thing_ (ex. git patch file)
  */
 export interface Filesystem extends Tagged {
-    filesystem: true
+    readonly type: { filesystem: true }
 
     hasFile(path: string): boolean
+
     getFile(path: string, merge: MergeInfo): Input
+
     allPaths(): string[]
 }
 

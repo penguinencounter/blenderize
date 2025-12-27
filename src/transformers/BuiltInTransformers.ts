@@ -179,7 +179,7 @@ export class GuessContentTypeTransformer implements BeforeTransformer<RawFile> {
     constructor(source: BlenderFile) {
         this.result = {
             content: source.content,
-            rawFile: true,
+            type: {rawFile: true},
             isText: isBinary(source.content),
             merge: source.merge,
             tag: "guess_text_or_not"

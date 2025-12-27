@@ -13,7 +13,7 @@ export class AssumeTextTransformer implements BeforeTransformer<RawFile> {
             tag: "always_text",
             isText: true, // totally real
             merge: source.merge,
-            rawFile: true
+            type: {rawFile: true}
         }
     }
 
@@ -58,17 +58,22 @@ export class NoAfterTransformer implements AfterTransformer<RawFile> {
         if (this.promise) throw new Error("already started!")
         return this.promise = fulfilled(this.result)
     }
+
     getProgress(): number {
         return 0
     }
+
     getTotal(): number | null {
         return null
     }
+
     getPromise(): Promise<BlenderFile> {
         return this.promise!
     }
+
     onProgress(_: ProgressCallback): void {
     }
+
     getPresentation(): ActionPresentation | null {
         return null
     }

@@ -1,7 +1,8 @@
-import {BeforeTransformer, BeforeTransformPlan} from "../api/flow"
-import {BlenderFile, RawFile} from "../api/tagger"
-import {AssumeTextTransformer} from "../transformers/RawTransformers"
+import {AfterTransformer, AfterTransformPlan, BeforeTransformer, BeforeTransformPlan} from "../api/flow"
+import {BlenderFile, RawFile, Tagged} from "../api/tagger"
+import {AssumeTextTransformer, NoAfterTransformer} from "../transformers/RawTransformers"
 import {registerBefore} from "./PlannerRegistry"
+import {GuessContentTypeTransformer} from "../transformers/BuiltInTransformers"
 
 
 const PROBABLY_TEXT_EXTENSIONS = new Set([
@@ -25,7 +26,7 @@ const PROBABLY_TEXT_EXTENSIONS = new Set([
  * gitattributes but scuffed
  */
 export const KnownTextFormats: BeforeTransformPlan<RawFile> = {
-    id: "builtin/known_text_formats",
+    id: "builtin/in/known_text",
     priority: -5,
     process(file: BlenderFile): BeforeTransformer<RawFile> {
         return new AssumeTextTransformer(file)
@@ -40,18 +41,31 @@ export const KnownTextFormats: BeforeTransformPlan<RawFile> = {
 }
 
 export const GuessTextOrBinary: BeforeTransformPlan<RawFile> = {
-    id: "builtin/guess_text_or_binary",
+    id: "builtin/in/auto",
     priority: -10,
     process(file: BlenderFile): BeforeTransformer<RawFile> {
-        // lie
-        return new AssumeTextTransformer(file)
+        return new GuessContentTypeTransformer(file)
     },
     matches(file: BlenderFile) {
-        return false
+        // yeah!
+        return true
     }
+}
+
+export const FileOutput: AfterTransformPlan<RawFile> = {
+    id: "builtin/out/file",
+    priority: -10,
+    process(result: RawFile): AfterTransformer<RawFile> {
+        return new NoAfterTransformer(result)
+    },
+    matches<T extends Tagged>(result: T): boolean {
+        return !!result.type.rawFile
+    }
+
 }
 
 
 export function registerAll() {
+    registerBefore(KnownTextFormats)
     registerBefore(GuessTextOrBinary)
 }
