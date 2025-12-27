@@ -192,23 +192,21 @@ export class GuessContentTypeTransformer implements BeforeTransformer<RawFile> {
     }
 
     getProgress(): number {
-        throw new Error("Method not implemented.")
+        return 0
     }
 
     getTotal(): number | null {
-        throw new Error("Method not implemented.")
+        return null
     }
 
     getPromise(): Promise<RawFile> {
         return this.promise!
     }
 
-    onProgress(callback: ProgressCallback): void {
-        throw new Error("Method not implemented.")
+    onProgress(_: ProgressCallback): void {
     }
 
     getPresentation(): ActionPresentation | null {
-        throw new Error("Method not implemented.")
+        return null
     }
-
 }
