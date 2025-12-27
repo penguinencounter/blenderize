@@ -1,5 +1,5 @@
 {
-  "exec": "pnpm build",
+  "exec": "pnpm build || exit 1",
   "watch": [
     "src/"
   ],

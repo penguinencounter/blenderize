@@ -10,12 +10,15 @@ const PROBABLY_TEXT_EXTENSIONS = new Set([
     // programming (web platform)
     "js", "ts", "htm", "html", "xhtml", "css", "jsx", "tsx", "less", "sass", "map",
     // other programming languages
-    "rb", "py", "php", "rs", "c", "h", "cpp", "hpp", "java", "sh", "vbs", "bat", "ps1", "pl", "cgi", "cs", "xml",
-    "ahk", "awk", "cmd", "dart", "go", "gd", "hta", "ino", "kt", "lua", "svelte", "vue", "wat", "xaml",
+    "rb", "py", "php", "rs", "c", "h", "cpp", "hpp", "java", "vbs", "bat", "ps1", "pl", "cgi", "cs", "xml",
+    "ahk", "awk", "cmd", "dart", "go", "gd", "hta", "ino", "kt", "lua", "svelte", "vue", "wat", "xaml", "gradle",
+    "sc", "cxx", "hxx", "cc", "hh",
     // programming (configuration & textual data)
-    "gitignore", "gitattributes", "ini", "toml", "yaml", "json",
+    "gitignore", "gitattributes", "vcsignore", "ini", "toml", "yaml", "json",
     // textual data storage formats
-    "csv", "tsv", "log",
+    "csv", "tsv", "log", "ass" /* SUBTITLES */,
+    // specialty
+    "bbmodel",
 ])
 
 /**
@@ -34,12 +37,13 @@ export const KnownTextFormats: BeforeTransformPlan<RawFile> = {
             return false // No file extension
         return PROBABLY_TEXT_EXTENSIONS.has(extension.toLowerCase())
     }
-
 }
+
 export const GuessTextOrBinary: BeforeTransformPlan<RawFile> = {
     id: "builtin/guess_text_or_binary",
     priority: -10,
     process(file: BlenderFile): BeforeTransformer<RawFile> {
+        // lie
         return new AssumeTextTransformer(file)
     },
     matches(file: BlenderFile) {
