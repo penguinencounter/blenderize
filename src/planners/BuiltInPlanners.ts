@@ -1,8 +1,16 @@
-import {AfterTransformer, AfterTransformPlan, BeforeTransformer, BeforeTransformPlan} from "../api/flow"
+import {
+    AfterTransformer,
+    AfterTransformPlan,
+    BeforeTransformer,
+    BeforeTransformPlan,
+    Merge,
+    MergePlan
+} from "../api/flow"
 import {BlenderFile, RawFile, Tagged} from "../api/tagger"
 import {AssumeTextTransformer, NoAfterTransformer} from "../transformers/RawTransformers"
-import {registerBefore} from "./PlannerRegistry"
+import {registerAfter, registerBefore, registerMerge} from "./PlannerRegistry"
 import {GuessContentTypeTransformer} from "../transformers/BuiltInTransformers"
+import {TextThreeWayMerge} from "../merge/merge_text"
 
 
 const PROBABLY_TEXT_EXTENSIONS = new Set([
@@ -61,11 +69,29 @@ export const FileOutput: AfterTransformPlan<RawFile> = {
     matches<T extends Tagged>(result: T): boolean {
         return !!result.type.rawFile
     }
-
 }
 
 
-export function registerAll() {
+export const ThreeWay: MergePlan<RawFile, RawFile> = {
+    id: "builtin/merge/three",
+    priority: -10,
+    process(_1: BlenderFile, _2: BlenderFile[], baseContainer: RawFile, sideContainers: RawFile[]): Merge<RawFile, RawFile> {
+        return new TextThreeWayMerge(baseContainer, sideContainers[0], sideContainers[1])
+    },
+    matches(_1: BlenderFile, _2: BlenderFile[], baseContainer: Tagged, sideContainers: Tagged[]): boolean {
+        return (
+            sideContainers.length === 2
+            && RawFile.isRawFile(baseContainer)
+            && RawFile.isRawFile(sideContainers[0])
+            && RawFile.isRawFile(sideContainers[1])
+        )
+    }
+}
+
+
+export function registerBuiltins() {
     registerBefore(KnownTextFormats)
     registerBefore(GuessTextOrBinary)
+    registerMerge(ThreeWay)
+    registerAfter(FileOutput)
 }

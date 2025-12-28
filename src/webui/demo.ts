@@ -4,6 +4,7 @@ import {ProgressBar} from "./ProgressBar"
 import {TextThreeWayMerge} from "../merge/merge_text"
 import {RawFile} from "../api/tagger"
 import {bytesToStr, isBinary, stringStats} from "../transformers/BuiltInTransformers"
+import {registerBuiltins} from "../planners/BuiltInPlanners"
 
 interface Card {
     label: HTMLElement,
@@ -37,6 +38,8 @@ function updatePresentation(present: ActionPresentation, card: Card) {
 window.addEventListener("load", () => {
     const card = produceCard(document.querySelector(".card")!)
     const progressBar = new ProgressBar(document.querySelector(".progress")!)
+
+    registerBuiltins()
 
     window.test = function () {
         progressBar.update(0.0, null)

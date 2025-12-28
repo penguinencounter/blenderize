@@ -35,6 +35,11 @@ export interface RawFile extends Tagged {
     readonly isText: boolean
     readonly content: Uint8Array
 }
+export const RawFile = {
+    isRawFile(tagged: Tagged): boolean {
+        return !!tagged.type.rawFile
+    }
+} as const
 
 /**
  * Represents a filesystem of some kind. This could be an actual folder (ex. "open folder"), a container (ex. ZIP),
