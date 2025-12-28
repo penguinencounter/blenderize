@@ -71,9 +71,9 @@ export abstract class InstantInput implements Input {
 export interface BeforeTransformer<Out extends Tagged> extends Action<Out> {
 }
 
-export interface Merge<In extends Tagged, Out extends Tagged> extends Action<Out> {
+export interface Merge<_In extends Tagged, Out extends Tagged> extends Action<Out> {
 
 }
 
-export interface AfterTransformer<In extends Tagged> extends Action<BlenderFile> {
+export interface AfterTransformer<_In extends Tagged> extends Action<BlenderFile> {
 }
