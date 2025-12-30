@@ -1,6 +1,6 @@
 import {ProgressCallback, ActionPresentation} from "../api/action"
 import {Merge} from "../api/flow"
-import {RawFile} from "../api/tagger"
+import {MergeInfo, RawFile} from "../api/tagger"
 
 type FileAtoms = string[]
 
@@ -231,11 +231,10 @@ interface Chunk {
     side2: Range
 }
 
-const Chunk = {
-    size(c: Chunk) {
-        return c.base[1] - c.base[0] + c.side1[1] - c.side1[0] + c.side2[1] - c.side2[0]
-    }
-} as const
+function arrayEq<T>(a: T[], b: T[]): boolean {
+    if (a.length !== b.length) return false
+    return a.every((v, i) => v === b[i])
+}
 
 /**
  * Line merge algorithm that supports exactly 2 sides and a base.
@@ -247,16 +246,24 @@ const Chunk = {
 export class TextThreeWayMerge implements Merge<RawFile, RawFile> {
     private static readonly TWO_WAY_ALGORITHM = MyersDiff
 
+    private promise?: Promise<RawFile>
+
     private readonly baseText: string
     private readonly side1Text: string
     private readonly side2Text: string
     private readonly baseAtoms: FileAtoms
     private readonly side1Atoms: FileAtoms
     private readonly side2Atoms: FileAtoms
+    private readonly merge: MergeInfo
 
     static atomize(text: string): FileAtoms {
         // on the subject of CRLFs: keep 'em :shrug:
         return text.split("\n")
+    }
+
+    static recombine(atoms: FileAtoms): string {
+        // on the subject of CRLFs: keep 'em :shrug:
+        return atoms.join('\n')
     }
 
     constructor(
@@ -271,6 +278,8 @@ export class TextThreeWayMerge implements Merge<RawFile, RawFile> {
         this.baseAtoms = TextThreeWayMerge.atomize(this.baseText)
         this.side1Atoms = TextThreeWayMerge.atomize(this.side1Text)
         this.side2Atoms = TextThreeWayMerge.atomize(this.side2Text)
+
+        this.merge = base.merge
     }
 
     private build2way(): { diff1: TwoWayDiffResult<string>, diff2: TwoWayDiffResult<string> } {
@@ -354,28 +363,61 @@ export class TextThreeWayMerge implements Merge<RawFile, RawFile> {
         return this.parse(diff1, diff2)
     }
 
+    private resolveChunk(chunk: Chunk): string | null {
+        const base = this.baseAtoms.slice(...chunk.base)
+        const side1 = this.side1Atoms.slice(...chunk.side1)
+        const side2 = this.side2Atoms.slice(...chunk.side2)
+        const s1b = arrayEq(base, side1)
+        const s2b = arrayEq(base, side2)
+        const s1s2 = arrayEq(side1, side2)
+
+        // same
+        if (s1b && s2b) return TextThreeWayMerge.recombine(base)
+        // changed in 1
+        if (!s1b && s2b) return TextThreeWayMerge.recombine(side1)
+        // changed in 2
+        if (s1b && !s2b) return TextThreeWayMerge.recombine(side2)
+        // fake conflict
+        if (s1s2) return TextThreeWayMerge.recombine(side1)
+        // real conflict
+        if (!s1b && !s2b && !s1s2) return null
+        throw new Error("this can't happen what")
+    }
+
+    private async run(): Promise<RawFile> {
+        const {diff1, diff2} = this.build2way()
+        const parsed = this.parse(diff1, diff2)
+        console.info(parsed)
+        return {
+            merge: this.merge,
+            content: new TextEncoder().encode(parsed.map(it => this.resolveChunk(it)).join("\n")),
+            type: {rawFile: true},
+            isText: true,
+            tag: "raw"
+        }
+    }
+
     // TODO: Use a worker to off-thread this?
     start(): Promise<RawFile> {
-        throw new Error("Method not implemented.")
+        return this.promise = this.run()
     }
 
     getProgress(): number {
-        throw new Error("Method not implemented.")
+        return 0
     }
 
     getTotal(): number | null {
-        throw new Error("Method not implemented.")
+        return null
     }
 
     getPromise(): Promise<RawFile> {
-        throw new Error("Method not implemented.")
+        return this.promise!
     }
 
     onProgress(callback: ProgressCallback): void {
-        throw new Error("Method not implemented.")
     }
 
     getPresentation(): ActionPresentation | null {
-        throw new Error("Method not implemented.")
+        return null
     }
 }

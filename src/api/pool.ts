@@ -1,7 +1,7 @@
 // the heart. maybe not the soul but definitely the heart
 
 import {BlenderFile, Tagged} from "./tagger"
-import {AfterTransformer, BeforeTransformer, Merge} from "./flow"
+import {AfterTransformer, BeforeTransformer, Input, Merge} from "./flow"
 import {findAfter, findBefore, findMerge} from "../planners/PlannerRegistry"
 
 interface MergeQueueItem {
@@ -11,6 +11,7 @@ interface MergeQueueItem {
 
 const mergeMembers = new Map<string, number>()
 
+const inputs = new Set<Input>()
 const inputWaitingRoom: BlenderFile[] = []
 const beforeTransformers = new Set<BeforeTransformer<Tagged>>()
 let mergeWaitingRoom: MergeQueueItem[] = []
@@ -25,11 +26,22 @@ function die(message: string): never {
 }
 
 
+export function submit(input: Input) {
+    inputs.add(input)
+    console.log(`Starting input`, input)
+    input.start().then(file => {
+        inputWaitingRoom.push(file)
+        inputs.delete(input)
+    })
+}
+
+
 export function stepInputs() {
     inputWaitingRoom.forEach(file => {
         const tx = findBefore(file)
         beforeTransformers.add(tx)
         mergeMembers.set(file.merge.key, (mergeMembers.get(file.merge.key) ?? 0) + 1)
+        console.log(`Starting before transform ${file.merge.key} ${file.merge.side}`, tx)
         tx.start().then(container => {
             beforeTransformers.delete(tx)
             mergeWaitingRoom.push({
@@ -38,6 +50,7 @@ export function stepInputs() {
             })
         })
     })
+    inputWaitingRoom.length = 0
 }
 
 function getGoingWithTheMergeAlready(items: MergeQueueItem[]) {
@@ -54,6 +67,7 @@ function getGoingWithTheMergeAlready(items: MergeQueueItem[]) {
 
     const tx = findMerge(base.file, sideFiles, base.container, sideContainers)
     merges.add(tx)
+    console.log(`Starting merge ${base.file.merge.key} (${sideContainers.length} sides + base)`, tx)
     tx.start().then(container => {
         merges.delete(tx)
         afterWaitingRoom.push(container)
@@ -87,10 +101,18 @@ export function stepOutputs() {
     afterWaitingRoom.forEach(container => {
         const tx = findAfter(container)
         afters.add(tx)
+        console.log(`Starting after transform ${container.merge.key}`, tx)
         tx.start().then(file => {
             afters.delete(tx)
             outputWaitingRoom.push(file)
+            console.log(`Completed ${container.merge.key}`, file)
         })
     })
     afterWaitingRoom.length = 0
+}
+
+export function step() {
+    stepInputs()
+    stepMerges()
+    stepOutputs()
 }
