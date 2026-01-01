@@ -1,6 +1,6 @@
 import {ProgressCallback, ActionPresentation} from "../api/action"
 import {Merge} from "../api/flow"
-import {MergeInfo, RawFile} from "../api/tagger"
+import {BlenderFile, MergeInfo, RawFile} from "../api/tagger"
 
 type FileAtoms = string[]
 
@@ -248,6 +248,7 @@ export class TextThreeWayMerge implements Merge<RawFile, RawFile> {
 
     private promise?: Promise<RawFile>
 
+    private readonly baseFile: BlenderFile
     private readonly baseText: string
     private readonly side1Text: string
     private readonly side2Text: string
@@ -267,10 +268,12 @@ export class TextThreeWayMerge implements Merge<RawFile, RawFile> {
     }
 
     constructor(
+        baseF: BlenderFile,
         base: RawFile,
         side1: RawFile,
         side2: RawFile
     ) {
+        this.baseFile = baseF
         const decoder = new TextDecoder("utf-8", {fatal: true})
         this.baseText = decoder.decode(base.content)
         this.side1Text = decoder.decode(side1.content)
@@ -358,11 +361,6 @@ export class TextThreeWayMerge implements Merge<RawFile, RawFile> {
         return chunks
     }
 
-    demo() {
-        const {diff1, diff2} = this.build2way()
-        return this.parse(diff1, diff2)
-    }
-
     private resolveChunk(chunk: Chunk): string | null {
         const base = this.baseAtoms.slice(...chunk.base)
         const side1 = this.side1Atoms.slice(...chunk.side1)
@@ -418,6 +416,9 @@ export class TextThreeWayMerge implements Merge<RawFile, RawFile> {
     }
 
     getPresentation(): ActionPresentation | null {
-        return null
+        const name = this.merge.key
+        return {
+            label: `Merge ${name}`
+        }
     }
 }

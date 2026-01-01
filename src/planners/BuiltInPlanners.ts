@@ -75,8 +75,8 @@ export const FileOutput: AfterTransformPlan<RawFile> = {
 export const ThreeWay: MergePlan<RawFile, RawFile> = {
     id: "builtin/merge/three",
     priority: -10,
-    process(_1: BlenderFile, _2: BlenderFile[], baseContainer: RawFile, sideContainers: RawFile[]): Merge<RawFile, RawFile> {
-        return new TextThreeWayMerge(baseContainer, sideContainers[0], sideContainers[1])
+    process(base: BlenderFile, _2: BlenderFile[], baseContainer: RawFile, sideContainers: RawFile[]): Merge<RawFile, RawFile> {
+        return new TextThreeWayMerge(base, baseContainer, sideContainers[0], sideContainers[1])
     },
     matches(_1: BlenderFile, _2: BlenderFile[], baseContainer: Tagged, sideContainers: Tagged[]): boolean {
         return (

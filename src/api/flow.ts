@@ -26,6 +26,11 @@ export interface MergePlan<C1 extends Tagged, C2 extends Tagged> extends Planner
     process(base: BlenderFile, sides: BlenderFile[], baseContainer: C1, sideContainers: C1[]): Merge<C1, C2>
 }
 
+export interface ConflictHandler<Conflict extends Tagged, Output extends Tagged> extends Planner {
+    matches(container: Tagged): boolean
+    process(container: Conflict): Promise<Output>
+}
+
 export interface AfterTransformPlan<C2 extends Tagged> extends Planner {
     matches(result: Tagged): boolean
 

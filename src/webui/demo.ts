@@ -71,24 +71,6 @@ window.addEventListener("load", () => {
         })
     }
 
-    function tagIt(x: string): RawFile {
-        return {
-            content: new TextEncoder().encode(x),
-            type: {rawFile: true},
-            merge: {
-                key: "demo_not_a_real_merge",
-                side: 0
-            },
-            isText: true,
-            tag: "raw_bytes"
-        }
-    }
-
-    window.test2 = function (a, b, c) {
-        let action = new TextThreeWayMerge(tagIt(a), tagIt(b), tagIt(c))
-        return action.demo()
-    }
-
     function demoEncoding(label: string, array: Iterable<number>) {
         const ui8 = new Uint8Array(array)
         const s = bytesToStr(ui8)
