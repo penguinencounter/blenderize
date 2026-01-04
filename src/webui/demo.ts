@@ -1,6 +1,6 @@
 import {FetchInput} from "../inputs/BrowserInputs"
 import {ActionPresentation} from "../api/action"
-import {ProgressBar} from "./ProgressBar"
+import {ProgressBar, setup as progressBarSetup} from "./ProgressBar"
 import {TextThreeWayMerge} from "../merge/merge_text"
 import {RawFile} from "../api/tagger"
 import {bytesToStr, isBinary, stringStats} from "../transformers/BuiltInTransformers"
@@ -37,9 +37,11 @@ function updatePresentation(present: ActionPresentation, card: Card) {
     card.progressText.innerText = present.progressText || "..."
 }
 
+progressBarSetup()
+
 window.addEventListener("load", () => {
     const card = produceCard(document.querySelector(".card")!)
-    const progressBar = new ProgressBar(document.querySelector(".progress")!)
+    const progressBar = document.querySelector(".progress")! as ProgressBar
 
     registerBuiltins()
 
